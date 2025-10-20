@@ -28,6 +28,7 @@ Route::post('/users', [UserController::class, 'store']);
 Route::put('/users/{id}', [UserController::class, 'update']);
 Route::delete('/users/{id}', [UserController::class, 'destroy']);
 
+
 //customercontroller
 Route::get('/customer-profiles', [CustomerProfileController::class, 'index']);
 Route::get('/customer-profiles/{user_id}', [CustomerProfileController::class, 'show']);
