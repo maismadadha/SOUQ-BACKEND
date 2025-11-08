@@ -12,6 +12,8 @@ class DeliveryProfile extends Model
     public $incrementing = false;
     protected $keyType = 'int';
 
+
+
     protected $fillable = [
         'user_id',
         'first_name',
@@ -23,6 +25,7 @@ class DeliveryProfile extends Model
 {
     return $this->belongsTo(User::class, 'user_id');
 }
+
 
 
 

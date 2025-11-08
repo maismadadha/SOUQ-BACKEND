@@ -15,6 +15,7 @@ class SellerProfile extends Model
     protected $fillable = [
     'user_id',
     'password',
+    'name',
     'store_description',
     'main_category_id',
     'store_logo_url',

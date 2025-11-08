@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Category extends Model
 {
-     protected $table = 'categories';
+    protected $table = 'categories';
 
-     protected $fillable = ['name'];
+    // أضف image ضمن الأعمدة القابلة للتعبئة
+    protected $fillable = ['name', 'image'];
 
-     public function sellers()
+    public function sellers()
     {
         return $this->hasMany(SellerProfile::class, 'main_category_id');
     }

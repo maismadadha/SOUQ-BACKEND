@@ -3,43 +3,63 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use App\Models\DeliveryProfile;
 
 class DeliveryProfileController extends Controller
 {
-public function show($user_id)
-{
-    $delivery = DeliveryProfile::where('user_id', $user_id)->firstOrFail();
-    return response()->json($delivery);
-}
+    // GET /deliveries
+    public function index()
+    {
+        $deliveries = DeliveryProfile::with('user')->get();
+        return response()->json($deliveries);
+    }
 
-public function update(Request $request, $user_id)
-{
-    $delivery = DeliveryProfile::where('user_id', $user_id)->firstOrFail();
+    // GET /deliveries/{user_id}
+    public function show($user_id)
+    {
+        $delivery = DeliveryProfile::with('user')
+            ->where('user_id', $user_id)->first();
 
-    $request->validate([
-        'first_name' => 'sometimes|string',
-        'last_name' => 'sometimes|string',
-        'password' => 'sometimes|string',
-        'profile_pic_url' => 'nullable|string',
-    ]);
+        if (!$delivery) {
+            return response()->json(['message' => 'DeliveryProfile not found'], 404);
+        }
 
-    $delivery->update($request->all());
+        return response()->json($delivery);
+    }
 
-    return response()->json([
-        'message' => 'DeliveryProfile updated successfully',
-        'data' => $delivery
-    ]);
-}
+    // PATCH/PUT /deliveries/{user_id}
+    public function update(Request $request, $user_id)
+    {
+        $delivery = DeliveryProfile::where('user_id', $user_id)->first();
+        if (!$delivery) {
+            return response()->json(['message' => 'DeliveryProfile not found'], 404);
+        }
 
-public function destroy($user_id)
-{
-    $delivery = DeliveryProfile::where('user_id', $user_id)->firstOrFail();
-    $delivery->delete();
+        $data = $request->validate([
+            'first_name'     => 'sometimes|nullable|string',
+            'last_name'      => 'sometimes|nullable|string',
+            'password'       => 'sometimes|string|min:6',
+            'profile_pic_url'=> 'sometimes|nullable|string',
+        ]);
 
-    return response()->json([
-        'message' => 'DeliveryProfile deleted successfully'
-    ]);
-}
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
 
+        $delivery->update($data);
+        return response()->json($delivery);
+    }
+
+    // DELETE /deliveries/{user_id}
+    public function destroy($user_id)
+    {
+        $delivery = DeliveryProfile::where('user_id', $user_id)->first();
+        if (!$delivery) {
+            return response()->json(['message' => 'DeliveryProfile not found'], 404);
+        }
+
+        $delivery->delete();
+        return response()->json(['message' => 'DeliveryProfile deleted successfully']);
+    }
 }

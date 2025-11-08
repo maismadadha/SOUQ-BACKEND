@@ -13,10 +13,17 @@ return new class extends Migration
     {
         Schema::create('delivery_orders', function (Blueprint $table) {
             $table->id();
+
+            // الربط بالطلب
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
+
+            // الربط بالمندوب
             $table->foreignId('delivery_id')->constrained('users')->onDelete('cascade');
-            $table->timestamp('picked_at')->nullable(); // وقت الاستلام من الدليفري
-            $table->timestamp('delivered_at')->nullable(); // وقت التسليم للزبون
+
+            // وقت الاستلام والتسليم
+            $table->timestamp('picked_at')->nullable();
+            $table->timestamp('delivered_at')->nullable();
+
             $table->timestamps();
         });
     }

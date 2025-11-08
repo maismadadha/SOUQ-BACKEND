@@ -20,6 +20,6 @@ class StoreCategory extends Model
 
     public function products()
     {
-        return $this->hasMany(Product::class, 'store_categories_id');
+        return $this->hasMany(Product::class, 'store_category_id');
     }
 }

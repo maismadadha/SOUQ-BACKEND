@@ -12,13 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('order_items', function (Blueprint $table) {
-            $table->id();
+              $table->id();
+
+            // الربط بالطلب
             $table->foreignId('order_id')->constrained('orders')->onDelete('cascade');
+
+            // الربط بالمنتج
             $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-            $table->foreignId('variant_id')->nullable()->constrained('product_variants')->onDelete('set null');
+
+            // الكمية والسعر
             $table->integer('quantity')->default(1);
             $table->decimal('price', 12, 2)->default(0.00);
+
+            // الخصم لو فيه
             $table->decimal('discount', 12, 2)->default(0.00);
+
             $table->timestamps();
         });
     }

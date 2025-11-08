@@ -5,55 +5,54 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CustomerProfile;
 
-
 class CustomerProfileController extends Controller
 {
+    // GET /customers
     public function index()
-{
-        $profiles = CustomerProfile::all();
+    {
+        $profiles = CustomerProfile::with('user')->get();
         return response()->json($profiles);
-}
+    }
 
-     public function show($user_id)
-{
-        $profile = CustomerProfile::find($user_id);
+    // GET /customers/{user_id}
+    public function show($user_id)
+    {
+        $profile = CustomerProfile::with('user')
+            ->where('user_id', $user_id)->first();
+
         if (!$profile) {
             return response()->json(['message' => 'Profile not found'], 404);
         }
-        return response()->json($profile);
-}
 
-     public function store(Request $request)
-{
-        $request->validate([
-            'user_id' => 'required|unique:customer_profiles,user_id',
-            'first_name' => 'nullable|string',
-            'last_name' => 'nullable|string'
+        return response()->json($profile);
+    }
+
+    // PATCH/PUT /customers/{user_id}
+    public function update(Request $request, $user_id)
+    {
+        $profile = CustomerProfile::where('user_id', $user_id)->first();
+        if (!$profile) {
+            return response()->json(['message' => 'Profile not found'], 404);
+        }
+
+        $data = $request->validate([
+            'first_name' => 'sometimes|nullable|string',
+            'last_name'  => 'sometimes|nullable|string',
         ]);
 
-        $profile = CustomerProfile::create($request->only(['user_id','first_name','last_name']));
-        return response()->json($profile, 201);
-}
-
-     public function update(Request $request, $user_id)
-{
-        $profile = CustomerProfile::find($user_id);
-        if (!$profile) {
-            return response()->json(['message' => 'Profile not found'], 404);
-        }
-
-        $profile->update($request->only(['first_name','last_name']));
+        $profile->update($data);
         return response()->json($profile);
-}
+    }
 
-     public function destroy($user_id)
-{
-        $profile = CustomerProfile::find($user_id);
+    // DELETE /customers/{user_id}
+    public function destroy($user_id)
+    {
+        $profile = CustomerProfile::where('user_id', $user_id)->first();
         if (!$profile) {
             return response()->json(['message' => 'Profile not found'], 404);
         }
 
         $profile->delete();
         return response()->json(['message' => 'Profile deleted successfully']);
-}
+    }
 }

@@ -10,12 +10,20 @@ class Product extends Model
 
     protected $fillable = [
         'store_id',
-        'store_categories_id',
+        'store_category_id',
         'name',
         'description',
         'price',
         'preparation_time',
         'attributes'
+    ];
+
+
+
+    // ✅ أهم نقطة: Laravel يحوّل attributes ↔ JSON لحاله
+    protected $casts = [
+        'attributes' => 'array',
+        'price'      => 'decimal:2', // اختياري
     ];
 
      public function store()
@@ -25,7 +33,7 @@ class Product extends Model
 
     public function storeCategory()
 {
-        return $this->belongsTo(StoreCategory::class, 'store_categories_id');
+        return $this->belongsTo(StoreCategory::class, 'store_category_id');
 }
 
     public function images()

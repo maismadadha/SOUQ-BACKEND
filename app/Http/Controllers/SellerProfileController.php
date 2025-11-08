@@ -3,78 +3,64 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use App\Models\SellerProfile;
-
-
 
 class SellerProfileController extends Controller
 {
-     public function index()
-{
-        $sellers = SellerProfile::with(['user', 'mainCategory'])->get();
+    // GET /sellers
+    public function index()
+    {
+        $sellers = SellerProfile::with(['user','mainCategory'])->get();
         return response()->json($sellers);
-}
+    }
 
-    public function show($id)
-{
-        $seller = SellerProfile::with(['user', 'mainCategory'])->find($id);
+    // GET /sellers/{user_id}
+    public function show($user_id)
+    {
+        $seller = SellerProfile::with(['user','mainCategory'])
+            ->where('user_id', $user_id)->first();
 
         if (!$seller) {
             return response()->json(['message' => 'Seller not found'], 404);
         }
-
         return response()->json($seller);
-}
+    }
 
-    public function store(Request $request)
-{
-        $data = $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'name' => 'required|string|max:255',
-            'password' => 'required|string|min:6',
-            'store_description' => 'nullable|string',
-            'main_category_id' => 'required|exists:categories,id',
-            'store_logo_url' => 'nullable|string',
-            'store_cover_url' => 'nullable|string',
-        ]);
-
-        $seller = SellerProfile::create($data);
-
-        return response()->json($seller, 201);
-}
-
-    public function update(Request $request, $id)
-{
-        $seller = SellerProfile::find($id);
-
+    // PATCH/PUT /sellers/{user_id}
+    public function update(Request $request, $user_id)
+    {
+        $seller = SellerProfile::where('user_id', $user_id)->first();
         if (!$seller) {
             return response()->json(['message' => 'Seller not found'], 404);
         }
 
         $data = $request->validate([
-            'password' => 'sometimes|string|min:6',
-            'name' => 'sometimes|string|max:255',
-            'store_description' => 'nullable|string',
-            'main_category_id' => 'sometimes|exists:categories,id',
-            'store_logo_url' => 'nullable|string',
-            'store_cover_url' => 'nullable|string',
+            'name'              => 'sometimes|string|max:255',
+            'password'          => 'sometimes|string|min:6',
+            'store_description' => 'sometimes|nullable|string',
+            'main_category_id'  => 'sometimes|exists:categories,id',
+            'store_logo_url'    => 'sometimes|nullable|string',
+            'store_cover_url'   => 'sometimes|nullable|string',
         ]);
+
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
 
         $seller->update($data);
-
         return response()->json($seller);
-}
+    }
 
-    public function destroy($id)
-{
-        $seller = SellerProfile::find($id);
-
+    // DELETE /sellers/{user_id}
+    public function destroy($user_id)
+    {
+        $seller = SellerProfile::where('user_id', $user_id)->first();
         if (!$seller) {
             return response()->json(['message' => 'Seller not found'], 404);
         }
 
         $seller->delete();
-
         return response()->json(['message' => 'Seller deleted successfully']);
-}
+    }
 }

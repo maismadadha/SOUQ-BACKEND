@@ -3,63 +3,89 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Product;
 use App\Models\ProductImage;
 
 class ProductImageController extends Controller
 {
-    public function index()
+    // GET /api/products/{productId}/images
+    public function index($productId)
     {
-        $images = ProductImage::with('product')->get();
+        // تأكيد المنتج موجود (اختياري بس مفيد)
+        $product = Product::find($productId);
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        $images = ProductImage::where('product_id', $productId)->get();
         return response()->json($images);
     }
 
-
-    public function show($id)
+    // POST /api/products/{productId}/images
+    // Body JSON: { "image_url": "https://..." }
+    public function store(Request $request, $productId)
     {
-        $image = ProductImage::with('product')->find($id);
-        if (!$image) {
-            return response()->json(['message' => 'Image not found'], 404);
+        $product = Product::find($productId);
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
         }
-        return response()->json($image);
-    }
 
-
-    public function store(Request $request)
-    {
         $data = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'image_url' => 'required|string',
+            'image_url' => 'required|string|max:255',
         ]);
 
-        $image = ProductImage::create($data);
+        // إذا كانت موجودة مسبقًا كمفتاح مركّب، رح يعمل SQL error؛
+        // فممكن نتحقق ببساطة:
+        $exists = ProductImage::where('product_id', $productId)
+                              ->where('image_url', $data['image_url'])
+                              ->exists();
+        if ($exists) {
+            return response()->json(['message' => 'Image already exists for this product'], 409);
+        }
+
+        $image = ProductImage::create([
+            'product_id' => $productId,
+            'image_url'  => $data['image_url'],
+        ]);
+
         return response()->json($image, 201);
     }
 
+    // DELETE /api/products/{productId}/images
+    // Body JSON: { "image_url": "https://..." }
+    public function destroy(Request $request, $productId)
+{
+    try {
+        // نقرأ image_url من أي مكان (query/json/form)
+        $imageUrl = $request->input('image_url');
+        if (!$imageUrl || !is_string($imageUrl)) {
+            return response()->json(['message' => 'image_url is required'], 422);
+        }
+        $imageUrl = urldecode(trim($imageUrl));
 
-    public function update(Request $request, $id)
-    {
-        $image = ProductImage::find($id);
-        if (!$image) {
+        // تأكد المنتج موجود (اختياري بس منظم)
+        $product = Product::find($productId);
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        // الحذف عبر الاستعلام مباشرة (مش عبر model instance)
+        $deleted = ProductImage::where('product_id', $productId)
+            ->where('image_url', $imageUrl)
+            ->delete();
+
+        if ($deleted === 0) {
             return response()->json(['message' => 'Image not found'], 404);
         }
 
-        $data = $request->validate([
-            'image_url' => 'required|string',
-        ]);
+        return response()->json(['message' => 'Image deleted successfully'], 200);
 
-        $image->update($data);
-        return response()->json($image);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'message' => 'Failed to delete image',
+            'error'   => $e->getMessage()
+        ], 422);
     }
+}
 
-    
-    public function destroy($id)
-    {
-        $image = ProductImage::find($id);
-        if (!$image) {
-            return response()->json(['message' => 'Image not found'], 404);
-        }
-
-        $image->delete();
-        return response()->json(['message' => 'Image deleted successfully']);
-    }
 }

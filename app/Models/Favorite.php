@@ -10,6 +10,7 @@ class Favorite extends Model
     protected $primaryKey = ['user_id', 'store_id'];
 
     protected $table = 'favorites';
+    public $timestamps = false;
 
     protected $fillable = [
         'user_id',
@@ -21,7 +22,7 @@ class Favorite extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-   
+
     public function store()
     {
         return $this->belongsTo(User::class, 'store_id');

@@ -8,15 +8,18 @@ class Order extends Model
 {
     protected $table = 'orders';
     protected $fillable = [
-        'customer_id',
-        'store_id',
-        'subtotal',
-        'delivery_fee',
-        'discount_total',
-        'items_count',
-        'note',
-        'status'
-    ];
+    'customer_id',
+    'store_id',
+    'address_id',      // جديد
+    'subtotal',
+    'delivery_fee',
+    'discount_total',
+    'total_price',     // جديد
+    'items_count',
+    'note',
+    'status'
+];
+
 
      public function customer()
     {
@@ -38,9 +41,9 @@ class Order extends Model
         return $this->hasOne(DeliveryOrder::class, 'order_id');
     }
 
-    public function orderAddress()
+    public function address()
 {
-    return $this->hasOne(OrderAddress::class, 'order_id');
+    return $this->belongsTo(Address::class, 'address_id');
 }
 
 

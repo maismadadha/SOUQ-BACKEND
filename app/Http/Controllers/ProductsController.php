@@ -7,69 +7,141 @@ use App\Models\Product;
 
 class ProductsController extends Controller
 {
-    public function index()
-{
-    $products = Product::with(['store', 'storeCategory', 'images', 'variants', 'options.values'])->get();
-    return response()->json($products);
-}
+    // ✅ GET /products?store_id=&store_category_id=
+    public function index(Request $request)
+    {
+        $query = Product::query();
 
+        if ($request->filled('store_id')) {
+            $query->where('store_id', $request->store_id);
+        }
+
+        if ($request->filled('store_category_id')) {
+            $query->where('store_category_id', $request->store_category_id);
+        }
+
+        // نجيب أول صورة لكل منتج فقط
+        $products = $query->with([
+            'images' => function ($q) {
+                $q->limit(1);
+            }
+        ])->get();
+
+        // نضيف cover_image بدل مصفوفة images
+        $products->transform(function ($product) {
+            $product->cover_image = $product->images->first()->image_url ?? null;
+            unset($product->images); // نخفي الصور من index فقط
+            return $product;
+        });
+
+        return response()->json($products);
+    }
+
+
+    // ✅ GET /products/{id}
     public function show($id)
-{
-    $product = Product::with(['store', 'storeCategory', 'images', 'variants', 'options.values'])->find($id);
-    if (!$product) {
-        return response()->json(['message' => 'Product not found'], 404);
-    }
-    return response()->json($product);
-}
+    {
+        $product = Product::with([
+            'store',
+            'storeCategory',
+            'images',
+            'variants',
+            'options.values'
+        ])->find($id);
 
-    public function store(Request $request)
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        return response()->json($product);
+    }
+
+
+    // ✅ POST /seller/products
+  public function store(Request $request)
 {
+    // 1) Validation مرن
     $data = $request->validate([
-        'store_id' => 'required|exists:users,id',
-        'store_categories_id' => 'required|exists:store_categories,id',
-        'name' => 'required|string|max:255',
-        'description' => 'nullable|string',
-        'price' => 'required|numeric',
-        'preparation_time' => 'nullable|date_format:H:i:s',
-        'attributes' => 'nullable|json',
+        'store_id'          => 'required|exists:users,id',
+        'store_category_id' => 'required|exists:store_categories,id',
+        'name'              => 'required|string|max:255',
+        'description'       => 'nullable|string',
+        'price'             => 'required|numeric|min:0',
+        'preparation_time'  => 'nullable|date_format:H:i:s',
+        'attributes'        => 'nullable', // نقبل مصفوفة أو نص JSON
     ]);
 
-    $product = Product::create($data);
+    // 2) قيَم افتراضية للحُقول الغير nullable بالـDB
+    // description عندك ليس nullable في الميجريشن -> حطّيها "" إن ما انبعتت
+    if (!array_key_exists('description', $data) || $data['description'] === null || $data['description'] === '') {
+        $data['description'] = '';
+    }
 
-    return response()->json($product, 201);
+    // preparation_time عندك time بدون nullable -> حطّي "00:00:00" إن ما انبعتت
+    if (!array_key_exists('preparation_time', $data) || $data['preparation_time'] === null || $data['preparation_time'] === '') {
+        $data['preparation_time'] = '00:00:00';
+    }
+
+    // 3) attributes: نقبل نص JSON أو مصفوفة ونحوّلها
+    if (array_key_exists('attributes', $data)) {
+        if (is_string($data['attributes'])) {
+            $decoded = json_decode($data['attributes'], true);
+            $data['attributes'] = $decoded ?: null;
+        } elseif (!is_array($data['attributes'])) {
+            $data['attributes'] = null;
+        }
+    }
+
+    try {
+        $product = Product::create($data);
+        return response()->json($product, 201);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'message' => 'Failed to create product',
+            'error'   => $e->getMessage()
+        ], 422);
+    }
 }
 
+
+    // ✅ PATCH /seller/products/{id}
     public function update(Request $request, $id)
-{
-    $product = Product::find($id);
-    if (!$product) {
-        return response()->json(['message' => 'Product not found'], 404);
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        $data = $request->validate([
+            'store_category_id' => 'sometimes|exists:store_categories,id',
+            'name' => 'sometimes|string|max:255',
+            'description' => 'nullable|string',
+            'price' => 'sometimes|numeric|min:0',
+            'preparation_time' => 'nullable|date_format:H:i:s',
+            'attributes' => 'nullable|array',
+        ]);
+
+        $product->update($data);
+
+        return response()->json([
+            'message' => 'Product updated successfully',
+            'product' => $product
+        ]);
     }
 
-    $data = $request->validate([
-        'store_categories_id' => 'sometimes|exists:store_categories,id',
-        'name' => 'sometimes|string|max:255',
-        'description' => 'nullable|string',
-        'price' => 'sometimes|numeric',
-        'preparation_time' => 'nullable|date_format:H:i:s',
-        'attributes' => 'nullable|json',
-    ]);
 
-    $product->update($data);
-
-    return response()->json($product);
-}
-
+    // ✅ DELETE /seller/products/{id}
     public function destroy($id)
-{
-    $product = Product::find($id);
-    if (!$product) {
-        return response()->json(['message' => 'Product not found'], 404);
+    {
+        $product = Product::find($id);
+
+        if (!$product) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        $product->delete();
+
+        return response()->json(['message' => 'Product deleted successfully']);
     }
-
-    $product->delete();
-
-    return response()->json(['message' => 'Product deleted successfully']);
-}
-
 }
