@@ -9,11 +9,21 @@ use App\Models\SellerProfile;
 class SellerProfileController extends Controller
 {
     // GET /sellers
-    public function index()
-    {
-        $sellers = SellerProfile::with(['user','mainCategory'])->get();
-        return response()->json($sellers);
+   public function index(Request $request)
+{
+    // بنبني الاستعلام الأساسي
+    $query = SellerProfile::with(['user', 'mainCategory']);
+
+    // إذا المستخدم بعث رقم فئة بالـ request (مثل ?main_category_id=3)
+    if ($request->filled('main_category_id')) {
+        $query->where('main_category_id', $request->input('main_category_id'));
     }
+
+    // بننفذ الاستعلام ونرجع النتيجة
+    $sellers = $query->get();
+
+    return response()->json($sellers);
+}
 
     // GET /sellers/{user_id}
     public function show($user_id)
@@ -42,6 +52,10 @@ class SellerProfileController extends Controller
             'main_category_id'  => 'sometimes|exists:categories,id',
             'store_logo_url'    => 'sometimes|nullable|string',
             'store_cover_url'   => 'sometimes|nullable|string',
+            'preparation_days'  => 'sometimes|integer|min:0',
+            'preparation_hours' => 'sometimes|integer|min:0',
+            'delivery_price'    => 'sometimes|numeric|min:0',
+
         ]);
 
         if (isset($data['password'])) {

@@ -39,6 +39,9 @@ Route::prefix('users')->group(function () {
     Route::delete('/{id}', [UserController::class, 'destroy']);
 });
 
+//login
+Route::post('app/login-user', [UserController::class, 'loginByPhone']);
+
 // Customer profiles
 Route::prefix('customer-profiles')->group(function () {
     Route::get('/',               [CustomerProfileController::class, 'index']);
@@ -89,6 +92,7 @@ Route::get('/products/{id}', [ProductsController::class, 'show']);
 Route::post('/seller/products', [ProductsController::class, 'store']);
 Route::patch('/seller/products/{id}', [ProductsController::class, 'update']);
 Route::delete('/seller/products/{id}', [ProductsController::class, 'destroy']);
+Route::get('/store-categories/{id}/products', [ProductsController::class, 'byCategory']);
 
 //ProductImageController
 Route::prefix('products/{productId}/images')->group(function () {

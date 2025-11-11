@@ -16,7 +16,7 @@ class DatabaseSeeder extends Seeder
             CategoriesSeeder::class,   // يضيف فئات المنتجات
             UsersOtpSeeder::class,     // يحدّث كود الـ OTP لكل المستخدمين
             UsersSeeder::class,        // ينشئ المستخدمين والمتاجر والمنتجات
-            
+            SliderAdsSeeder::class,
         ]);
     }
 }

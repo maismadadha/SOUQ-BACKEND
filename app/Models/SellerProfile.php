@@ -19,7 +19,19 @@ class SellerProfile extends Model
     'store_description',
     'main_category_id',
     'store_logo_url',
-    'store_cover_url'];
+    'store_cover_url',
+    'preparation_days',    // 👈 جديد
+    'preparation_hours',   // 👈 جديد
+    'delivery_price',
+ ];
+
+  protected $casts = [
+        'preparation_days'  => 'integer',
+        'preparation_hours' => 'integer',
+        'delivery_price'    => 'decimal:2',
+        'created_at'        => 'datetime',
+        'updated_at'        => 'datetime',
+    ];
 
     public function user()
 {

@@ -7,9 +7,12 @@ use App\Models\SliderAd;
 
 class SliderAdController extends Controller
 {
+    /**
+     * عرض كل الإعلانات في السلايدر
+     */
     public function index(Request $request)
     {
-        // activeOnly=true افتراضيًا لعرض الإعلانات الحالية فقط في السلايدر
+        // إذا activeOnly=true (افتراضي) => اعرض فقط الإعلانات الحالية (اللي وقتها ضمن المدى الزمني)
         $activeOnly = $request->boolean('activeOnly', true);
         $storeId    = $request->input('store_id');
 
@@ -25,12 +28,14 @@ class SliderAdController extends Controller
             $query->where('store_id', $storeId);
         }
 
-        // ترتيب بسيط مناسب للسلايدر
         $ads = $query->orderBy('start_date', 'asc')->get();
 
         return response()->json($ads);
     }
 
+    /**
+     * عرض إعلان واحد بالتفصيل
+     */
     public function show($id)
     {
         $ad = SliderAd::with('store')->find($id);
@@ -40,19 +45,27 @@ class SliderAdController extends Controller
         return response()->json($ad);
     }
 
+    /**
+     * إنشاء إعلان جديد
+     */
     public function store(Request $request)
     {
         $data = $request->validate([
-            'store_id'   => 'required|exists:users,id',
-            'image_url'  => 'required|string',
-            'start_date' => 'required|date',
-            'end_date'   => 'required|date|after_or_equal:start_date',
+            'store_id'    => 'required|exists:users,id',
+            'title'       => 'nullable|string|max:255',   // 👈 جديد
+            'description' => 'nullable|string',           // 👈 جديد
+            'image_url'   => 'required|string',
+            'start_date'  => 'required|date',
+            'end_date'    => 'required|date|after_or_equal:start_date',
         ]);
 
         $ad = SliderAd::create($data);
         return response()->json($ad, 201);
     }
 
+    /**
+     * تعديل إعلان موجود
+     */
     public function update(Request $request, $id)
     {
         $ad = SliderAd::find($id);
@@ -61,16 +74,21 @@ class SliderAdController extends Controller
         }
 
         $data = $request->validate([
-            'store_id'   => 'sometimes|exists:users,id',
-            'image_url'  => 'sometimes|string',
-            'start_date' => 'sometimes|date',
-            'end_date'   => 'sometimes|date|after_or_equal:start_date',
+            'store_id'    => 'sometimes|exists:users,id',
+            'title'       => 'sometimes|nullable|string|max:255', // 👈 جديد
+            'description' => 'sometimes|nullable|string',         // 👈 جديد
+            'image_url'   => 'sometimes|string',
+            'start_date'  => 'sometimes|date',
+            'end_date'    => 'sometimes|date|after_or_equal:start_date',
         ]);
 
         $ad->update($data);
         return response()->json($ad);
     }
 
+    /**
+     * حذف إعلان
+     */
     public function destroy($id)
     {
         $ad = SliderAd::find($id);

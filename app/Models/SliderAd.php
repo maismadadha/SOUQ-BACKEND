@@ -10,6 +10,8 @@ class SliderAd extends Model
 
     protected $fillable = [
         'store_id',
+        'title',
+        'description', 
         'image_url',
         'start_date',
         'end_date',

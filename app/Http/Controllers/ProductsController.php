@@ -39,22 +39,26 @@ class ProductsController extends Controller
 
 
     // ✅ GET /products/{id}
-    public function show($id)
-    {
-        $product = Product::with([
-            'store',
-            'storeCategory',
-            'images',
-            'variants',
-            'options.values'
-        ])->find($id);
-
-        if (!$product) {
-            return response()->json(['message' => 'Product not found'], 404);
+   public function show($id)
+{
+    $product = Product::with([
+        'store',
+        'storeCategory',
+        'images' => function ($q) {
+            $q->limit(1);
         }
+    ])->find($id);
 
-        return response()->json($product);
+    if (!$product) {
+        return response()->json(['message' => 'Product not found'], 404);
     }
+
+    $product->cover_image = $product->images->first()->image_url ?? null;
+    unset($product->images);
+
+    return response()->json($product);
+}
+
 
 
     // ✅ POST /seller/products
@@ -144,4 +148,25 @@ class ProductsController extends Controller
 
         return response()->json(['message' => 'Product deleted successfully']);
     }
+
+    public function byCategory($id, Request $request)
+{
+    $query = Product::query()->where('store_category_id', $id);
+
+    // اختياري: تقييد بمتجر
+    if ($request->filled('store_id')) {
+        $query->where('store_id', $request->store_id);
+    }
+
+    $products = $query->with(['images' => fn($q) => $q->limit(1)])->get();
+
+    $products->transform(function ($p) {
+        $p->cover_image = $p->images->first()->image_url ?? null;
+        unset($p->images);
+        return $p;
+    });
+
+    return response()->json($products);
+}
+
 }

@@ -204,4 +204,34 @@ class UserController extends Controller
         $user->delete(); // عندك ON DELETE CASCADE بالبروفايلات، فتمام
         return response()->json(['message' => 'User deleted successfully']);
     }
+
+
+    public function loginByPhone(Request $request)
+{
+    // 1) فاليديشن بسيط
+    $data = $request->validate([
+        'phone' => 'required'
+    ]);
+
+    // 2) نجيب اليوزر حسب رقم التلفون والدور customer
+    $user = User::with('customerProfile')
+        ->where('phone', $data['phone'])
+        ->where('role', 'customer') // بما إن تطبيقك تبع customers
+        ->first();
+
+    // 3) لو ما لقيناه
+    if (!$user) {
+        return response()->json([
+            'message' => 'User not found',
+        ], 404);
+    }
+
+    // 4) لو لقيناه
+    return response()->json([
+        'message' => 'Login success',
+        'user'    => $user,
+    ], 200);
+}
+
+
 }
