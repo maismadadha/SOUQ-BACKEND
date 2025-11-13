@@ -91,6 +91,26 @@ class UsersSeeder extends Seeder
             ]);
         }
 
+        $sizeOption2 = ProductOption::create([
+            'product_id' => $product1->id,
+            'name' => 'color',
+            'label' => 'اللون',
+            'selection' => 'single',
+            'required' => true,
+            'sort_order' => 2,
+            'affects_variant' => true,
+        ]);
+
+        foreach (['احمر','ابيض','ازرق'] as $color) {
+            ProductOptionValue::create([
+                'option_id' => $sizeOption2->id,
+                'value' => $color,
+                'label' => $color,
+                'price_delta' => 0,
+                'sort_order' => 0,
+            ]);
+        }
+
         $product2 = Product::create([
             'store_id' => $user1->id,
             'store_category_id' => $mostSellingCategory->id,
