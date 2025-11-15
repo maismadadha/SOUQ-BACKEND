@@ -128,57 +128,56 @@ Route::delete('/users/{userId}/addresses/{id}',       [AddressController::class,
 
 
 //FavoriteController
-Route::get(   '/users/{user_id}/favorites',                 [FavoriteController::class, 'indexByUser']);
-Route::post(  '/users/{user_id}/favorites',                 [FavoriteController::class, 'storeForUser']);      // body: { "store_id": 4 }
-Route::delete('/users/{user_id}/favorites/{store_id}',      [FavoriteController::class, 'destroyForUser']);
-
+Route::get   ('/users/{user_id}/favorites', [FavoriteController::class, 'indexByUser']);
+Route::post  ('/users/{user_id}/favorites', [FavoriteController::class, 'storeForUser']);
+Route::delete('/users/{user_id}/favorites/{store_id}', [FavoriteController::class, 'destroyForUser']);
 
 
 // Cart / Order Actions
 // إضافة منتج للسلة أو إنشاء Cart جديد
-Route::post('/orders/add-to-cart', [OrderController::class, 'addToCart'])->middleware('auth:sanctum');
+Route::post('/orders/add-to-cart', [OrderController::class, 'addToCart']);
 // حذف Cart موجود (إذا الزبون وافق على حذف cart من متجر آخر)
-Route::delete('/orders/cart/{cartId}', [OrderController::class, 'deleteCart'])->middleware('auth:sanctum');
+Route::delete('/orders/cart/{cartId}', [OrderController::class, 'deleteCart']);
 // تعديل كمية منتج في الـ cart
-Route::put('/orders/cart/item/{itemId}', [OrderController::class, 'updateCartItem'])->middleware('auth:sanctum');
+Route::put('/orders/cart/item/{itemId}', [OrderController::class, 'updateCartItem']);
 // تعيين عنوان للطلب
-Route::put('/orders/{orderId}/address', [OrderController::class, 'setOrderAddress'])->middleware('auth:sanctum');
+Route::put('/orders/{orderId}/address', [OrderController::class, 'setOrderAddress']);
 // تأكيد الطلب
-Route::put('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder'])->middleware('auth:sanctum');
+Route::put('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder']);
 // تحديث حالة الطلب (متجر أو مندوب)
-Route::put('/orders/{orderId}/status', [OrderController::class, 'updateOrderStatus'])->middleware('auth:sanctum');
+Route::put('/orders/{orderId}/status', [OrderController::class, 'updateOrderStatus']);
 // ==============================
 // عرض الطلبات
 // ==============================
 // عرض كل طلبات الزبون
-Route::get('/orders/customer', [OrderController::class, 'getOrdersForCustomer'])->middleware('auth:sanctum');
+Route::get('/orders/customer', [OrderController::class, 'getOrdersForCustomer']);
 // عرض كل طلبات المتجر
-Route::get('/orders/store', [OrderController::class, 'getOrdersForStore'])->middleware('auth:sanctum');
+Route::get('/orders/store', [OrderController::class, 'getOrdersForStore']);
 // عرض كل طلبات المندوب
-Route::get('/orders/delivery', [OrderController::class, 'getOrdersForDelivery'])->middleware('auth:sanctum');
+Route::get('/orders/delivery', [OrderController::class, 'getOrdersForDelivery']);
 
 
 // Order Items Routes
 // عرض كل الـ order items (لو حبيت تستخدمها في admin أو debug)
-Route::get('/order-items', [OrderItemController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/order-items', [OrderItemController::class, 'index']);
 // عرض OrderItem معين
-Route::get('/order-items/{id}', [OrderItemController::class, 'show'])->middleware('auth:sanctum');
+Route::get('/order-items/{id}', [OrderItemController::class, 'show']);
 // إضافة منتج جديد للـ order (السلة)
-Route::post('/order-items', [OrderItemController::class, 'store'])->middleware('auth:sanctum');
+Route::post('/order-items', [OrderItemController::class, 'store']);
 // تعديل منتج موجود في الـ order
-Route::put('/order-items/{id}', [OrderItemController::class, 'update'])->middleware('auth:sanctum');
+Route::put('/order-items/{id}', [OrderItemController::class, 'update']);
 // حذف منتج من الـ order
-Route::delete('/order-items/{id}', [OrderItemController::class, 'destroy'])->middleware('auth:sanctum');
+Route::delete('/order-items/{id}', [OrderItemController::class, 'destroy']);
 
 
 // Delivery Orders Routes
 // عرض كل الـ delivery orders (مثلاً للـ admin أو لوحة المندوب)
-Route::get('/delivery-orders', [DeliveryOrderController::class, 'index'])->middleware('auth:sanctum');
+Route::get('/delivery-orders', [DeliveryOrderController::class, 'index']);
 // عرض DeliveryOrder معين
-Route::get('/delivery-orders/{id}', [DeliveryOrderController::class, 'show'])->middleware('auth:sanctum');
+Route::get('/delivery-orders/{id}', [DeliveryOrderController::class, 'show']);
 // إنشاء DeliveryOrder جديد (ربط طلب بالمندوب)
-Route::post('/delivery-orders', [DeliveryOrderController::class, 'store'])->middleware('auth:sanctum');
+Route::post('/delivery-orders', [DeliveryOrderController::class, 'store']);
 // تحديث DeliveryOrder (picked_at / delivered_at)
-Route::put('/delivery-orders/{id}', [DeliveryOrderController::class, 'update'])->middleware('auth:sanctum');
+Route::put('/delivery-orders/{id}', [DeliveryOrderController::class, 'update']);
 // حذف DeliveryOrder
-Route::delete('/delivery-orders/{id}', [DeliveryOrderController::class, 'destroy'])->middleware('auth:sanctum');
+Route::delete('/delivery-orders/{id}', [DeliveryOrderController::class, 'destroy']);

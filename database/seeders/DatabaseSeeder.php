@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             UsersOtpSeeder::class,     // يحدّث كود الـ OTP لكل المستخدمين
             UsersSeeder::class,        // ينشئ المستخدمين والمتاجر والمنتجات
             SliderAdsSeeder::class,
+            DemoStoreSeeder::class,
+            
         ]);
     }
 }

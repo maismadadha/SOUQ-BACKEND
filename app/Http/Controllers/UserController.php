@@ -52,6 +52,21 @@ class UserController extends Controller
     // POST /users  (ينشئ user + profile حسب الدور)
     public function store(Request $request)
     {
+         if (User::where('phone', $request->phone)->exists()) {
+        return response()->json([
+            'message' => 'Phone already exists',
+            'field'   => 'phone'
+        ], 409);
+    }
+
+    // فحص الإيميل (لو الإيميل مش فاضي)
+    if ($request->filled('email') && User::where('email', $request->email)->exists()) {
+        return response()->json([
+            'message' => 'Email already exists',
+            'field'   => 'email'
+        ], 409);
+    }
+
         $data = $request->validate([
             'phone' => 'required|unique:users,phone',
             'email' => 'nullable|email|unique:users,email',
@@ -223,7 +238,7 @@ class UserController extends Controller
     if (!$user) {
         return response()->json([
             'message' => 'User not found',
-        ], 404);
+        ], 401);
     }
 
     // 4) لو لقيناه

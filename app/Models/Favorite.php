@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Favorite extends Model
 {
     public $incrementing = false;
-    protected $primaryKey = ['user_id', 'store_id'];
+    
 
     protected $table = 'favorites';
     public $timestamps = false;
@@ -27,4 +27,5 @@ class Favorite extends Model
     {
         return $this->belongsTo(User::class, 'store_id');
     }
+
 }
