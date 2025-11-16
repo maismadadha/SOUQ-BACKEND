@@ -84,4 +84,15 @@ class AddressController extends Controller
 
         return response()->json(['message' => 'Address deleted successfully']);
     }
+
+     public function getAddressesForUser(Request $request)
+    {
+        $data = $request->validate([
+            'user_id' => 'required|exists:users,id'
+        ]);
+
+        $addresses = Address::where('user_id', $data['user_id'])->get();
+
+        return response()->json($addresses);
+    }
 }

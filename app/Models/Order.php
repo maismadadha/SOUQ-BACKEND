@@ -17,7 +17,8 @@ class Order extends Model
     'total_price',     // جديد
     'items_count',
     'note',
-    'status'
+    'status',
+    'payment_method',
 ];
 
 

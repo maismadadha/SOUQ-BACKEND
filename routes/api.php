@@ -125,6 +125,8 @@ Route::get(   '/users/{userId}/addresses',            [AddressController::class,
 Route::post(  '/users/{userId}/addresses',            [AddressController::class, 'storeForUser']);
 Route::patch('/users/{user_id}/addresses/{id}', [AddressController::class, 'update']);
 Route::delete('/users/{userId}/addresses/{id}',       [AddressController::class, 'destroyForUser']);
+Route::get('/addresses', [AddressController::class, 'getAddressesForUser']);
+
 
 
 //FavoriteController
@@ -155,6 +157,9 @@ Route::get('/orders/customer', [OrderController::class, 'getOrdersForCustomer'])
 Route::get('/orders/store', [OrderController::class, 'getOrdersForStore']);
 // عرض كل طلبات المندوب
 Route::get('/orders/delivery', [OrderController::class, 'getOrdersForDelivery']);
+Route::put('/orders/{orderId}/note', [OrderController::class, 'setOrderNote']);
+Route::put('/orders/{orderId}/meta', [OrderController::class, 'setOrderMeta']);
+
 
 
 // Order Items Routes

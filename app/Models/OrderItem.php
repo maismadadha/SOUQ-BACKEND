@@ -13,7 +13,12 @@ class OrderItem extends Model
         'quantity',
         'price',
         'discount',
+        'customizations',
     ];
+    
+    protected $casts = [
+    'customizations' => 'array',
+];
 
     public function order()
     {
@@ -25,5 +30,5 @@ class OrderItem extends Model
         return $this->belongsTo(Product::class, 'product_id');
     }
 
-    
+
 }
