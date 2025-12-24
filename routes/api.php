@@ -22,6 +22,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OrderAddressController;
 use App\Http\Controllers\OrderItemController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\UploadController;
 
 
 
@@ -41,6 +42,9 @@ Route::prefix('users')->group(function () {
 
 //login
 Route::post('app/login-user', [UserController::class, 'loginByPhone']);
+Route::post('/seller/login', [UserController::class, 'sellerLogin']);
+Route::post('/delivery/login', [UserController::class, 'deliveryLogin']);
+
 
 // Customer profiles
 Route::prefix('customer-profiles')->group(function () {
@@ -116,7 +120,7 @@ Route::prefix('slider-ads')->group(function () {
     Route::get('/', [SliderAdController::class, 'index']);      // عرض الإعلانات
     Route::get('/{id}', [SliderAdController::class, 'show']);   // عرض إعلان واحد
     Route::post('/', [SliderAdController::class, 'store']);     // إنشاء إعلان جديد
-    Route::patch('/{id}', [SliderAdController::class, 'update']); // تعديل جزئي
+   //    Route::patch('/{id}', [SliderAdController::class, 'update']);      // تعديل جزئي
     Route::delete('/{id}', [SliderAdController::class, 'destroy']); // حذف
 });
 
@@ -148,6 +152,9 @@ Route::put('/orders/{orderId}/address', [OrderController::class, 'setOrderAddres
 Route::put('/orders/{orderId}/confirm', [OrderController::class, 'confirmOrder']);
 // تحديث حالة الطلب (متجر أو مندوب)
 Route::put('/orders/{orderId}/status', [OrderController::class, 'updateOrderStatus']);
+Route::post('/orders/{orderId}/safe-status', [OrderController::class, 'safeUpdateOrderStatus']);
+Route::post('/orders/{orderId}/seller-status', [OrderController::class, 'updateOrderStatusSeller']);
+
 // ==============================
 // عرض الطلبات
 // ==============================
@@ -159,6 +166,11 @@ Route::get('/orders/store', [OrderController::class, 'getOrdersForStore']);
 Route::get('/orders/delivery', [OrderController::class, 'getOrdersForDelivery']);
 Route::put('/orders/{orderId}/note', [OrderController::class, 'setOrderNote']);
 Route::put('/orders/{orderId}/meta', [OrderController::class, 'setOrderMeta']);
+Route::get('/order/details', [OrderController::class, 'getOrderById']);
+
+Route::get('orders/ready', [OrderController::class, 'getOrdersReadyForDelivery']);
+
+
 
 
 
@@ -186,3 +198,22 @@ Route::post('/delivery-orders', [DeliveryOrderController::class, 'store']);
 Route::put('/delivery-orders/{id}', [DeliveryOrderController::class, 'update']);
 // حذف DeliveryOrder
 Route::delete('/delivery-orders/{id}', [DeliveryOrderController::class, 'destroy']);
+
+
+
+Route::post('/upload-image', [UploadController::class, 'upload']);
+
+Route::get('/sellers/search', [SellerProfileController::class, 'search']);
+Route::post('seller/products/full', [ProductsController::class, 'storeFull']);
+Route::post('seller/upload-logo', [SellerProfileController ::class, 'uploadLogo']);
+Route::post('seller/upload-cover', [SellerProfileController::class, 'uploadCover']);
+
+Route::patch('users/{userId}/addresses/{addressId}/default',
+    [AddressController::class, 'setDefault']);
+
+
+
+
+    Route::post('/orders/{orderId}/accept', [OrderController::class, 'acceptOrderByDelivery']);
+    Route::post('/orders/{orderId}/delivered', [OrderController::class, 'markOrderDelivered']);
+

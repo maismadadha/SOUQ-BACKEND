@@ -11,7 +11,7 @@ class SliderAd extends Model
     protected $fillable = [
         'store_id',
         'title',
-        'description', 
+        'description',
         'image_url',
         'start_date',
         'end_date',
@@ -21,4 +21,14 @@ class SliderAd extends Model
     {
         return $this->belongsTo(User::class, 'store_id');
     }
+
+    public function getImageUrlAttribute($value)
+{
+    if (str_starts_with($value, 'http')) {
+        return $value;
+    }
+
+    return asset('storage/' . $value);
+}
+
 }

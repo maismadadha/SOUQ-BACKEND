@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Product;
+use Illuminate\Support\Facades\DB;
+use App\Models\ProductOption;
+use App\Models\ProductOptionValue;
 
 class ProductsController extends Controller
 {
@@ -167,6 +170,74 @@ class ProductsController extends Controller
     });
 
     return response()->json($products);
+}
+
+public function storeFull(Request $request)
+{
+    $data = $request->validate([
+        'store_id' => 'required|integer',
+        'store_category_id' => 'required|integer',
+        'name' => 'required|string',
+        'description' => 'nullable|string',
+        'price' => 'required|numeric',
+        'preparation_time' => 'nullable|string',
+        'options' => 'nullable|array',
+        'options.*.name' => 'required|string',
+        'options.*.label' => 'nullable|string',
+        'options.*.required' => 'boolean',
+        'options.*.selection' => 'in:single,multi',
+        'options.*.affects_variant' => 'boolean',
+        'options.*.values' => 'nullable|array',
+        'options.*.values.*.value' => 'required|string',
+        'options.*.values.*.label' => 'nullable|string',
+        'options.*.values.*.price_delta' => 'numeric'
+    ]);
+
+    return DB::transaction(function () use ($data) {
+
+        // 1️⃣ إنشاء المنتج
+        $product = Product::create([
+            'store_id' => $data['store_id'],
+            'store_category_id' => $data['store_category_id'],
+            'name' => $data['name'],
+            'description' => $data['description'] ?? null,
+            'price' => $data['price'],
+            'preparation_time' => $data['preparation_time'] ?? '00:00:00'
+        ]);
+
+        // 2️⃣ إنشاء الخيارات + القيم
+        if (!empty($data['options'])) {
+            foreach ($data['options'] as $i => $opt) {
+
+                $option = ProductOption::create([
+                    'product_id' => $product->id,
+                    'name' => $opt['name'],
+                    'label' => $opt['label'] ?? $opt['name'],
+                    'required' => $opt['required'] ?? true,
+                    'selection' => $opt['selection'] ?? 'single',
+                    'affects_variant' => $opt['affects_variant'] ?? true,
+                    'sort_order' => $i
+                ]);
+
+                if (!empty($opt['values'])) {
+                    foreach ($opt['values'] as $j => $val) {
+                        ProductOptionValue::create([
+                            'option_id' => $option->id,
+                            'value' => $val['value'],
+                            'label' => $val['label'] ?? $val['value'],
+                            'price_delta' => $val['price_delta'] ?? 0,
+                            'sort_order' => $j
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'message' => 'Product created successfully',
+            'product' => $product->load('options.values')
+        ], 201);
+    });
 }
 
 }

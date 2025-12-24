@@ -19,7 +19,9 @@ class DeliveryProfile extends Model
         'first_name',
         'last_name',
         'password',
-        'profile_pic_url'];
+        'profile_pic_url',
+    'vehicle_type',
+    'vehicle_number'];
 
     public function user()
 {

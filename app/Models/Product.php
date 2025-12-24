@@ -3,10 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
     protected $table = 'products';
+    protected $appends = [
+    'main_image_url',
+    'cover_image',
+];
+
+
 
     protected $fillable = [
         'store_id',
@@ -24,7 +31,7 @@ class Product extends Model
     ];
 
     // مهم عشان يرجع في الـ JSON
-    protected $appends = ['main_image_url'];
+
 
     public function store()
     {
@@ -58,27 +65,54 @@ class Product extends Model
 
     // ========= أهم جزء: main_image_url =========
 
-    public function getMainImageUrlAttribute()
-    {
-        // 1) لو عندك cover_image جاهز (زي اللي مبين في JSON)
-        if (!empty($this->cover_image)) {
-            return $this->cover_image; // لأنه أصلاً URL كامل من Pexels
-        }
+  public function getMainImageUrlAttribute()
+{
+    // خذ أول صورة من product_images
+    $firstImage = $this->images()->first();
 
-        // 2) لو ما في cover_image، نرجع لأول صورة من جدول product_images
-        $image = $this->images()->first();
-        if (!$image) {
-            return null;
-        }
-
-        $url = $image->image_url;
-
-        // 3) لو الرابط أصلاً كامل (http أو https) → رجّعه زي ما هو
-        if (preg_match('/^https?:\/\//', $url)) {
-            return $url;
-        }
-
-        // 4) غير هيك، اعتبره path نسبي جوّا storage
-        return asset('storage/' . ltrim($url, '/'));
+    if (!$firstImage) {
+        return null;
     }
+
+    $value = $firstImage->image_url;
+
+    // إذا صورة من النت (Seeder)
+    if (Str::startsWith($value, ['http://', 'https://'])) {
+        return $value;
+    }
+
+    // إذا صورة مرفوعة من النظام
+    return asset('storage/' . $value);
+}
+
+public function getCoverImageAttribute()
+{
+    // 1️⃣ لو في صورة كفر مخزنة (Seeder قديم)
+    if (!empty($this->attributes['cover_image'])) {
+        $value = $this->attributes['cover_image'];
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        return asset('storage/' . $value);
+    }
+
+    // 2️⃣ خذ أول صورة من product_images
+    $firstImage = $this->images()->first();
+    if ($firstImage) {
+        $value = $firstImage->image_url;
+
+        if (Str::startsWith($value, ['http://', 'https://'])) {
+            return $value;
+        }
+
+        return asset('storage/' . $value);
+    }
+
+    // 3️⃣ صورة افتراضية
+    return asset('images/default-product.png');
+}
+
+
 }

@@ -5,24 +5,43 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\ProductImage;
+use Illuminate\Support\Str;
 
 class ProductImageController extends Controller
 {
     // GET /api/products/{productId}/images
     public function index($productId)
     {
-        // تأكيد المنتج موجود (اختياري بس مفيد)
         $product = Product::find($productId);
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        $images = ProductImage::where('product_id', $productId)->get();
-        return response()->json($images);
+        $images = ProductImage::where('product_id', $productId)
+            ->get()
+            ->map(function ($img) {
+
+                $value = $img->image_url;
+
+                // صورة من النت (Seeder)
+                if (Str::startsWith($value, ['http://', 'https://'])) {
+                    return [
+                        'product_id' => $img->product_id,
+                        'image_url'  => $value,
+                    ];
+                }
+
+                // صورة مرفوعة من النظام
+                return [
+                    'product_id' => $img->product_id,
+                    'image_url'  => asset('storage/' . $value),
+                ];
+            });
+
+        return response()->json($images, 200);
     }
 
     // POST /api/products/{productId}/images
-    // Body JSON: { "image_url": "https://..." }
     public function store(Request $request, $productId)
     {
         $product = Product::find($productId);
@@ -34,42 +53,48 @@ class ProductImageController extends Controller
             'image_url' => 'required|string|max:255',
         ]);
 
-        // إذا كانت موجودة مسبقًا كمفتاح مركّب، رح يعمل SQL error؛
-        // فممكن نتحقق ببساطة:
         $exists = ProductImage::where('product_id', $productId)
-                              ->where('image_url', $data['image_url'])
-                              ->exists();
+            ->where('image_url', $data['image_url'])
+            ->exists();
+
         if ($exists) {
-            return response()->json(['message' => 'Image already exists for this product'], 409);
+            return response()->json(['message' => 'Image already exists'], 409);
         }
 
         $image = ProductImage::create([
             'product_id' => $productId,
-            'image_url'  => $data['image_url'],
+            'image_url'  => $data['image_url'], // URL أو path
         ]);
 
-        return response()->json($image, 201);
+        $value = $image->image_url;
+
+        return response()->json([
+            'product_id' => $image->product_id,
+            'image_url'  => Str::startsWith($value, ['http://', 'https://'])
+                ? $value
+                : asset('storage/' . $value),
+        ], 201);
     }
 
     // DELETE /api/products/{productId}/images
-    // Body JSON: { "image_url": "https://..." }
     public function destroy(Request $request, $productId)
-{
-    try {
-        // نقرأ image_url من أي مكان (query/json/form)
+    {
         $imageUrl = $request->input('image_url');
-        if (!$imageUrl || !is_string($imageUrl)) {
+
+        if (!$imageUrl) {
             return response()->json(['message' => 'image_url is required'], 422);
         }
-        $imageUrl = urldecode(trim($imageUrl));
 
-        // تأكد المنتج موجود (اختياري بس منظم)
+        // إذا URL كامل، نحوله path
+        if (Str::startsWith($imageUrl, ['http://', 'https://'])) {
+            $imageUrl = str_replace(asset('storage/') . '/', '', $imageUrl);
+        }
+
         $product = Product::find($productId);
         if (!$product) {
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        // الحذف عبر الاستعلام مباشرة (مش عبر model instance)
         $deleted = ProductImage::where('product_id', $productId)
             ->where('image_url', $imageUrl)
             ->delete();
@@ -79,13 +104,5 @@ class ProductImageController extends Controller
         }
 
         return response()->json(['message' => 'Image deleted successfully'], 200);
-
-    } catch (\Throwable $e) {
-        return response()->json([
-            'message' => 'Failed to delete image',
-            'error'   => $e->getMessage()
-        ], 422);
     }
-}
-
 }

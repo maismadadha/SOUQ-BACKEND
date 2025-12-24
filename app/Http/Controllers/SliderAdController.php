@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\SliderAd;
+use Illuminate\Support\Facades\Storage;
+
 
 class SliderAdController extends Controller
 {
@@ -49,46 +51,64 @@ class SliderAdController extends Controller
      * إنشاء إعلان جديد
      */
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'store_id'    => 'required|exists:users,id',
-            'title'       => 'nullable|string|max:255',   // 👈 جديد
-            'description' => 'nullable|string',           // 👈 جديد
-            'image_url'   => 'required|string',
-            'start_date'  => 'required|date',
-            'end_date'    => 'required|date|after_or_equal:start_date',
-        ]);
+{
+    $request->validate([
+        'store_id'    => 'required|exists:users,id',
+        'title'       => 'nullable|string|max:255',
+        'description' => 'nullable|string',
 
-        $ad = SliderAd::create($data);
-        return response()->json($ad, 201);
+        // 👇 واحد منهم لازم يكون موجود
+        'image'       => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
+        'image_url'   => 'nullable|url',
+
+        'start_date'  => 'required|date',
+        'end_date'    => 'required|date|after_or_equal:start_date',
+    ]);
+
+    // 🔴 تحقق منطقي
+    if (!$request->hasFile('image') && !$request->filled('image_url')) {
+        return response()->json([
+            'message' => 'You must provide either image file or image_url'
+        ], 422);
     }
 
-    /**
-     * تعديل إعلان موجود
-     */
-    public function update(Request $request, $id)
-    {
-        $ad = SliderAd::find($id);
-        if (!$ad) {
-            return response()->json(['message' => 'SliderAd not found'], 404);
-        }
-
-        $data = $request->validate([
-            'store_id'    => 'sometimes|exists:users,id',
-            'title'       => 'sometimes|nullable|string|max:255', // 👈 جديد
-            'description' => 'sometimes|nullable|string',         // 👈 جديد
-            'image_url'   => 'sometimes|string',
-            'start_date'  => 'sometimes|date',
-            'end_date'    => 'sometimes|date|after_or_equal:start_date',
-        ]);
-
-        $ad->update($data);
-        return response()->json($ad);
+    if ($request->hasFile('image') && $request->filled('image_url')) {
+        return response()->json([
+            'message' => 'Provide only one: image OR image_url'
+        ], 422);
     }
 
-    /**
-     * حذف إعلان
-     */
+    // 🟢 تحديد الصورة
+    if ($request->hasFile('image')) {
+        // صورة من التلفون
+        $path = $request->file('image')->store('slider_ads', 'public');
+        $imagePath = $path;
+        $fullUrl   = asset('storage/' . $path);
+    } else {
+        // رابط من النت (Seeder / Postman)
+        $imagePath = $request->image_url;
+        $fullUrl   = $request->image_url;
+    }
+
+    // 🟢 إنشاء الإعلان
+    $ad = SliderAd::create([
+        'store_id'    => $request->store_id,
+        'title'       => $request->title,
+        'description' => $request->description,
+        'image_url'   => $imagePath, // path أو URL
+        'start_date'  => $request->start_date,
+        'end_date'    => $request->end_date,
+    ]);
+
+    return response()->json([
+        'message'   => 'Slider ad created successfully',
+        'ad'        => $ad,
+        'image_url'=> $fullUrl,
+    ], 201);
+}
+
+
+
     public function destroy($id)
     {
         $ad = SliderAd::find($id);

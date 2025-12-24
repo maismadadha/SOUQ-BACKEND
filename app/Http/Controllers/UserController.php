@@ -18,7 +18,6 @@ class UserController extends Controller
         $role = $request->query('role');
 
         $query = User::query()->with([
-            // بنحمّل البروفايل المناسب بس مش شرط كله
             'customerProfile',
             'sellerProfile',
             'deliveryProfile',
@@ -32,9 +31,7 @@ class UserController extends Controller
             $query->where('role', 'delivery');
         }
 
-        $users = $query->get();
-
-        return response()->json($users);
+        return response()->json($query->get());
     }
 
     // GET /users/{id}
@@ -52,20 +49,19 @@ class UserController extends Controller
     // POST /users  (ينشئ user + profile حسب الدور)
     public function store(Request $request)
     {
-         if (User::where('phone', $request->phone)->exists()) {
-        return response()->json([
-            'message' => 'Phone already exists',
-            'field'   => 'phone'
-        ], 409);
-    }
+        if (User::where('phone', $request->phone)->exists()) {
+            return response()->json([
+                'message' => 'Phone already exists',
+                'field'   => 'phone'
+            ], 409);
+        }
 
-    // فحص الإيميل (لو الإيميل مش فاضي)
-    if ($request->filled('email') && User::where('email', $request->email)->exists()) {
-        return response()->json([
-            'message' => 'Email already exists',
-            'field'   => 'email'
-        ], 409);
-    }
+        if ($request->filled('email') && User::where('email', $request->email)->exists()) {
+            return response()->json([
+                'message' => 'Email already exists',
+                'field'   => 'email'
+            ], 409);
+        }
 
         $data = $request->validate([
             'phone' => 'required|unique:users,phone',
@@ -88,20 +84,26 @@ class UserController extends Controller
 
             // delivery only
             'profile_pic_url' => 'nullable|string',
+
+            // 🚀 الأعمدة التي أضفناها
+            'vehicle_type'   => 'required_if:role,delivery|string',
+            'vehicle_number' => 'required_if:role,delivery|string',
         ]);
 
         $user = null;
 
         DB::transaction(function () use (&$user, $data) {
-            // 1) أنشئ المستخدم
+
+            // 1) إنشاء المستخدم
             $user = User::create([
                 'email' => $data['email'] ?? null,
                 'phone' => $data['phone'],
-                'role'  => $data['role'], // لازم نضيف عمود role بجدول users
+                'role'  => $data['role'],
             ]);
 
-            // 2) أنشئ البروفايل حسب الدور
+            // 2) إنشاء البروفايل حسب الدور
             switch ($user->role) {
+
                 case 'customer':
                     CustomerProfile::create([
                         'user_id'    => $user->id,
@@ -114,7 +116,7 @@ class UserController extends Controller
                     SellerProfile::create([
                         'user_id'           => $user->id,
                         'name'              => $data['name'],
-                        'password'          => Hash::make($data['password']), // مهم
+                        'password'          => Hash::make($data['password']),
                         'store_description' => $data['store_description'] ?? null,
                         'main_category_id'  => $data['main_category_id'],
                         'store_logo_url'    => $data['store_logo_url'] ?? '',
@@ -127,14 +129,17 @@ class UserController extends Controller
                         'user_id'         => $user->id,
                         'first_name'      => $data['first_name'] ?? null,
                         'last_name'       => $data['last_name'] ?? null,
-                        'password'        => Hash::make($data['password']), // مهم
+                        'password'        => Hash::make($data['password']),
                         'profile_pic_url' => $data['profile_pic_url'] ?? '',
+
+                        // 🚀 الأعمدة الجديدة
+                        'vehicle_type'    => $data['vehicle_type'],
+                        'vehicle_number'  => $data['vehicle_number'],
                     ]);
                     break;
             }
         });
 
-        // رجّع اليوزر مع بروفايله
         $user->load(['customerProfile','sellerProfile','deliveryProfile']);
 
         return response()->json([
@@ -147,6 +152,7 @@ class UserController extends Controller
     public function update(Request $request, $id)
     {
         $user = User::with(['customerProfile','sellerProfile','deliveryProfile'])->find($id);
+
         if (!$user) {
             return response()->json(['message' => 'User not found'], 404);
         }
@@ -155,28 +161,32 @@ class UserController extends Controller
             'phone' => 'sometimes|unique:users,phone,' . $id,
             'email' => 'sometimes|nullable|email|unique:users,email,' . $id,
 
-            // تحديث معلومات البروفايل حسب الدور الحالي
             'first_name' => 'sometimes|string',
             'last_name'  => 'sometimes|string',
 
             'password'   => 'sometimes|min:6',
+
             'name'              => 'sometimes|string|max:255',
             'store_description' => 'sometimes|nullable|string',
             'main_category_id'  => 'sometimes|exists:categories,id',
             'store_logo_url'    => 'sometimes|nullable|string',
             'store_cover_url'   => 'sometimes|nullable|string',
             'profile_pic_url'   => 'sometimes|nullable|string',
+
+            // ✨ تحديث بيانات المركبة
+            'vehicle_type'   => 'sometimes|string',
+            'vehicle_number' => 'sometimes|string',
         ]);
 
         DB::transaction(function () use ($user, $data) {
+
             // تحديث user
             $user->update([
                 'email' => $data['email'] ?? $user->email,
                 'phone' => $data['phone'] ?? $user->phone,
-                // ما بنغيّر role هون (إذا بدك تغيير دور نحكيه بخطوة منفصلة)
             ]);
 
-            // تحديث البروفايل حسب دور المستخدم الحالي
+            // تحديث customer
             if ($user->role === 'customer' && $user->customerProfile) {
                 $user->customerProfile->update([
                     'first_name' => $data['first_name'] ?? $user->customerProfile->first_name,
@@ -184,6 +194,7 @@ class UserController extends Controller
                 ]);
             }
 
+            // تحديث seller
             if ($user->role === 'seller' && $user->sellerProfile) {
                 $user->sellerProfile->update([
                     'name'              => $data['name']              ?? $user->sellerProfile->name,
@@ -195,19 +206,22 @@ class UserController extends Controller
                 ]);
             }
 
+            // تحديث delivery
             if ($user->role === 'delivery' && $user->deliveryProfile) {
                 $user->deliveryProfile->update([
                     'first_name'      => $data['first_name']      ?? $user->deliveryProfile->first_name,
                     'last_name'       => $data['last_name']       ?? $user->deliveryProfile->last_name,
                     'password'        => isset($data['password']) ? Hash::make($data['password']) : $user->deliveryProfile->password,
                     'profile_pic_url' => array_key_exists('profile_pic_url', $data) ? $data['profile_pic_url'] : $user->deliveryProfile->profile_pic_url,
+
+                    // 🚀 تحديث بيانات المركبة
+                    'vehicle_type'    => $data['vehicle_type']   ?? $user->deliveryProfile->vehicle_type,
+                    'vehicle_number'  => $data['vehicle_number'] ?? $user->deliveryProfile->vehicle_number,
                 ]);
             }
         });
 
-        $user->load(['customerProfile','sellerProfile','deliveryProfile']);
-
-        return response()->json($user);
+        return response()->json($user->load(['customerProfile','sellerProfile','deliveryProfile']));
     }
 
     // DELETE /users/{id}
@@ -216,32 +230,92 @@ class UserController extends Controller
         $user = User::find($id);
         if (!$user) return response()->json(['message' => 'User not found'], 404);
 
-        $user->delete(); // عندك ON DELETE CASCADE بالبروفايلات، فتمام
+        $user->delete();
         return response()->json(['message' => 'User deleted successfully']);
     }
 
 
     public function loginByPhone(Request $request)
+    {
+        $data = $request->validate([
+            'phone' => 'required'
+        ]);
+
+        $user = User::with('customerProfile')
+            ->where('phone', $data['phone'])
+            ->where('role', 'customer')
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found',
+            ], 401);
+        }
+
+        return response()->json([
+            'message' => 'Login success',
+            'user'    => $user,
+        ], 200);
+    }
+
+    public function sellerLogin(Request $request)
+    {
+        $data = $request->validate([
+            'phone'    => 'required',
+            'password' => 'required',
+        ]);
+
+        $user = User::with('sellerProfile')
+            ->where('phone', $data['phone'])
+            ->where('role', 'seller')
+            ->first();
+
+        if (!$user || !$user->sellerProfile) {
+            return response()->json([
+                'message' => 'Invalid credentials',
+            ], 401);
+        }
+
+        if (!Hash::check($data['password'], $user->sellerProfile->password)) {
+            return response()->json([
+                'message' => 'Invalid credentials',
+            ], 401);
+        }
+
+        $user->sellerProfile->makeHidden('password');
+
+        return response()->json([
+            'message' => 'Login success',
+            'user'    => $user,
+        ], 200);
+    }
+
+    public function deliveryLogin(Request $request)
 {
-    // 1) فاليديشن بسيط
     $data = $request->validate([
-        'phone' => 'required'
+        'phone'    => 'required',
+        'password' => 'required',
     ]);
 
-    // 2) نجيب اليوزر حسب رقم التلفون والدور customer
-    $user = User::with('customerProfile')
+    $user = User::with('deliveryProfile')
         ->where('phone', $data['phone'])
-        ->where('role', 'customer') // بما إن تطبيقك تبع customers
+        ->where('role', 'delivery')
         ->first();
 
-    // 3) لو ما لقيناه
-    if (!$user) {
+    if (!$user || !$user->deliveryProfile) {
         return response()->json([
-            'message' => 'User not found',
+            'message' => 'Invalid credentials',
         ], 401);
     }
 
-    // 4) لو لقيناه
+    if (!Hash::check($data['password'], $user->deliveryProfile->password)) {
+        return response()->json([
+            'message' => 'Invalid credentials',
+        ], 401);
+    }
+
+    $user->deliveryProfile->makeHidden('password');
+
     return response()->json([
         'message' => 'Login success',
         'user'    => $user,

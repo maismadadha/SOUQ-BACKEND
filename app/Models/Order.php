@@ -10,15 +10,18 @@ class Order extends Model
     protected $fillable = [
     'customer_id',
     'store_id',
-    'address_id',      // جديد
+    'delivery_id',     // ✅ جديد
+    'address_id',
     'subtotal',
     'delivery_fee',
     'discount_total',
-    'total_price',     // جديد
+    'total_price',
     'items_count',
     'note',
     'status',
     'payment_method',
+    'picked_at',       // (اختياري)
+    'delivered_at',    
 ];
 
 
@@ -36,6 +39,12 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class, 'order_id');
     }
+
+    public function deliveryPerson()
+{
+    return $this->belongsTo(User::class, 'delivery_id');
+}
+
 
     public function delivery()
     {

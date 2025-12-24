@@ -17,7 +17,7 @@ class LamsetEdSeeder extends Seeder
     public function run(): void
     {
         /* =========================
-         * 1️⃣ Seller User
+         * 1️⃣ إنشاء المستخدم (Seller)
          * ========================= */
         $user = User::create([
             'email' => 'lamseted@suq-app.com',
@@ -29,17 +29,17 @@ class LamsetEdSeeder extends Seeder
             'user_id'           => $user->id,
             'password'          => Hash::make('123456'),
             'name'              => 'لمسة إيد',
-            'store_description' => 'متجر لمسة إيد يقدّم منتجات يدوية مصنوعة بعناية باستخدام مواد طبيعية ولمسة فنية دافئة تناسب جميع المناسبات.',
+            'store_description' => 'متجر لمسة إيد مختص بتقديم منتجات يدوية مصنوعة بعناية ولمسة فنية مميزة باستخدام مواد طبيعية وبجودة عالية.',
             'main_category_id'  => 1, // أعمال يدوية
-            'store_logo_url'    => 'https://images.pexels.com/photos/8716181/pexels-photo-8716181.jpeg',
-            'store_cover_url'   => 'https://images.pexels.com/photos/4841363/pexels-photo-4841363.jpeg',
+            'store_logo_url'    => 'https://images.unsplash.com/photo-1523275335684-37898b6baf30',
+            'store_cover_url'   => 'https://images.unsplash.com/photo-1503602642458-232111445657',
             'preparation_days'  => 1,
             'preparation_hours' => 6,
             'delivery_price'    => 3.00,
         ]);
 
         /* =========================
-         * 2️⃣ Store Categories
+         * 2️⃣ فئات المتجر
          * ========================= */
         $best = StoreCategory::create([
             'store_id' => $user->id,
@@ -51,27 +51,33 @@ class LamsetEdSeeder extends Seeder
             'name'     => 'هدايا يدوية',
         ]);
 
+        $decor = StoreCategory::create([
+            'store_id' => $user->id,
+            'name'     => 'ديكور منزلي',
+        ]);
+
         /* =========================
-         * 3️⃣ Product 1: شمعة صويا
+         * 3️⃣ المنتج 1: شمعة صويا
          * ========================= */
         $candle = Product::create([
             'store_id'          => $user->id,
             'store_category_id' => $best->id,
             'name'              => 'شمعة صويا معطّرة',
-            'description'       => 'شمعة مصنوعة يدويًا من شمع الصويا الطبيعي، تمنح أجواء دافئة ورائحة مهدئة، مناسبة للاسترخاء والاستخدام اليومي.',
+            'description'       => 'شمعة مصنوعة يدويًا من شمع الصويا الطبيعي، تمنح أجواء دافئة ورائحة مهدئة، مناسبة للاستخدام اليومي.',
             'price'             => 8.00,
             'preparation_time'  => '00:15:00',
         ]);
 
-        foreach ([
-            'https://images.pexels.com/photos/6755809/pexels-photo-6755809.jpeg',
-            'https://images.pexels.com/photos/6755863/pexels-photo-6755863.jpeg',
-        ] as $img) {
-            ProductImage::create([
+        ProductImage::insert([
+            [
                 'product_id' => $candle->id,
-                'image_url'  => $img,
-            ]);
-        }
+                'image_url'  => 'https://images.unsplash.com/photo-1602526219045-b7c8c39b8b02',
+            ],
+            [
+                'product_id' => $candle->id,
+                'image_url'  => 'https://images.unsplash.com/photo-1589987607627-616cac2a3a9c',
+            ],
+        ]);
 
         $scent = ProductOption::create([
             'product_id' => $candle->id,
@@ -85,56 +91,58 @@ class LamsetEdSeeder extends Seeder
 
         foreach (['لافندر','فانيليا','ورد'] as $i => $v) {
             ProductOptionValue::create([
-                'option_id'   => $scent->id,
-                'value'       => $v,
-                'label'       => $v,
+                'option_id' => $scent->id,
+                'value' => $v,
+                'label' => $v,
                 'price_delta' => 0,
-                'sort_order'  => $i,
+                'sort_order' => $i,
             ]);
         }
 
         /* =========================
-         * 4️⃣ Product 2: حامل شموع
+         * 4️⃣ المنتج 2: حامل شموع
          * ========================= */
         $holder = Product::create([
             'store_id'          => $user->id,
             'store_category_id' => $best->id,
             'name'              => 'حامل شموع خشبي',
-            'description'       => 'حامل شموع مصنوع يدويًا من الخشب الطبيعي بتصميم بسيط يضيف لمسة ديكور دافئة للمكان.',
+            'description'       => 'حامل شموع مصنوع يدويًا من الخشب الطبيعي بتصميم بسيط يضيف لمسة ديكور دافئة.',
             'price'             => 6.00,
             'preparation_time'  => '00:10:00',
         ]);
 
-        foreach ([
-            'https://images.pexels.com/photos/6633441/pexels-photo-6633441.jpeg',
-            'https://images.pexels.com/photos/10496215/pexels-photo-10496215.jpeg',
-        ] as $img) {
-            ProductImage::create([
+        ProductImage::insert([
+            [
                 'product_id' => $holder->id,
-                'image_url'  => $img,
-            ]);
-        }
+                'image_url'  => 'https://images.unsplash.com/photo-1616627452249-8a8b2b0c4a9d',
+            ],
+            [
+                'product_id' => $holder->id,
+                'image_url'  => 'https://images.unsplash.com/photo-1540574163026-643ea20ade25',
+            ],
+        ]);
 
         /* =========================
-         * 5️⃣ Product 3: صندوق هدايا
+         * 5️⃣ المنتج 3: صندوق هدايا
          * ========================= */
         $box = Product::create([
             'store_id'          => $user->id,
             'store_category_id' => $gifts->id,
             'name'              => 'صندوق هدايا يدوي',
-            'description'       => 'صندوق هدايا أنيق مصنوع يدويًا، مناسب لتقديم الهدايا في المناسبات الخاصة بلمسة طبيعية ودافئة.',
+            'description'       => 'صندوق هدايا أنيق مصنوع يدويًا مناسب لتقديم الهدايا في المناسبات المختلفة.',
             'price'             => 12.00,
             'preparation_time'  => '00:20:00',
         ]);
 
-        foreach ([
-            'https://images.pexels.com/photos/5876688/pexels-photo-5876688.jpeg',
-            'https://images.pexels.com/photos/20192214/pexels-photo-20192214.jpeg',
-        ] as $img) {
-            ProductImage::create([
+        ProductImage::insert([
+            [
                 'product_id' => $box->id,
-                'image_url'  => $img,
-            ]);
-        }
+                'image_url'  => 'https://images.unsplash.com/photo-1607349913331-1c4eaccc0d37',
+            ],
+            [
+                'product_id' => $box->id,
+                'image_url'  => 'https://images.unsplash.com/photo-1512909006721-3d6018887383',
+            ],
+        ]);
     }
 }
