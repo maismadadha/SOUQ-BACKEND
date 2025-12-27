@@ -1,44 +1,54 @@
-# ---------- Stage 1: Composer dependencies ----------
-FROM composer:2 AS vendor
+-----------------------------
+Stage 1: Install Composer deps (PHP 8.2)
+-----------------------------
+FROM composer:2-php82 AS vendor
+
 WORKDIR /app
 
-# Copy only composer files first (better caching)
+Copy composer files first (better caching)
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress
 
-# Copy the full project and optimize autoload
+Install production deps
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+Copy the rest of the app (so autoload dumps can see files if needed)
 COPY . .
-RUN composer dump-autoload --optimize
+
+(Optional) If you want, you can optimize autoload again after full copy
+RUN composer dump-autoload --no-dev --optimize
 
 
-# ---------- Stage 2: Runtime image ----------
+-----------------------------
+Stage 2: Runtime (PHP 8.2 + Apache)
+-----------------------------
 FROM php:8.2-apache
 
-# Enable Apache rewrite
-RUN a2enmod rewrite
-
-# Install PHP extensions needed for Laravel + MySQL
+Install OS deps + PHP extensions needed for Laravel + MySQL
 RUN apt-get update && apt-get install -y \
-    libzip-dev unzip \
- && docker-php-ext-install pdo pdo_mysql \
- && rm -rf /var/lib/apt/lists/*
+    unzip git libzip-dev \
+    && docker-php-ext-install pdo pdo_mysql zip \
+    && a2enmod rewrite headers \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set document root to /public
+Cloud Run uses $PORT (not 80)
+ENV PORT=8080
+RUN sed -i 's/80/${PORT}/g' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
+
+Set Apache docroot to Laravel /public
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+ && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 WORKDIR /var/www/html
 
-# Copy app (including vendor from stage 1)
-COPY --from=vendor /app /var/www/html
+Copy app source
+COPY . .
 
-# Permissions (Laravel storage/cache)
+Copy vendor from Stage 1
+COPY --from=vendor /app/vendor /var/www/html/vendor
+
+Laravel permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 8080
-
-# Cloud Run uses PORT env var
-RUN sed -i 's/Listen 80/Listen 8080/g' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
-
 CMD ["apache2-foreground"]
