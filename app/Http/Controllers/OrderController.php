@@ -256,7 +256,7 @@ public function getOrdersForCustomer(Request $request)
 
 
 
-   
+
 
     // دالة مساعدة لحساب المجاميع
     private function recalculateOrder(Order $order)
@@ -367,33 +367,44 @@ public function getOrdersReadyForDelivery()
     $orders = Order::where('status', 'READY_FOR_PICKUP')
         ->whereNull('delivery_id')
         ->with([
-            'address', // عنوان الزبون
-            'store.addresses', // عناوين المتجر
-            'customer.customerProfile',
+            'address',                    // عنوان الزبون
+            'store.addresses',            // عناوين المتجر
+            'store.sellerProfile',        // اسم المتجر
+            'customer.customerProfile',   // اسم الزبون
         ])
         ->get();
 
     $orders->each(function ($order) {
 
-        // اسم الزبون
-        $customerProfile = optional($order->customer->customerProfile);
+        /* =========================
+         *  اسم الزبون
+         * ========================= */
+        $customerProfile = optional(optional($order->customer)->customerProfile);
         $order->customer_name = trim(
             ($customerProfile->first_name ?? '') . ' ' .
             ($customerProfile->last_name ?? '')
         );
 
-        // اسم المتجر
-        $order->store_name = optional($order->store)->name;
+        /* =========================
+         *  اسم المتجر
+         * ========================= */
+        $order->store_name = optional(
+            optional($order->store)->sellerProfile
+        )->name;
 
-        // ⭐ عنوان المتجر الديفولت
+        /* =========================
+         *  عنوان المتجر الديفولت فقط
+         * ========================= */
         $order->store_address = optional(
-            $order->store->addresses->where('is_default', true)->first()
+            optional($order->store)->addresses
+                ->where('is_default', 1)
+                ->first()
         );
-
     });
 
     return response()->json($orders);
 }
+
 
 
 public function acceptOrderByDelivery(Request $request, $orderId)
@@ -403,7 +414,7 @@ public function acceptOrderByDelivery(Request $request, $orderId)
     ]);
 
     $order = Order::where('id', $orderId)
-        ->where('status', 'READY_FOR_PICKUP')
+        ->where('status', 'READY_FOR_PICKUP') // تضل زي ما هي
         ->whereNull('delivery_id')
         ->lockForUpdate()
         ->first();
@@ -414,16 +425,16 @@ public function acceptOrderByDelivery(Request $request, $orderId)
         ], 409);
     }
 
+    // ✅ فقط ربط الطلب بالمندوب
     $order->delivery_id = $data['delivery_id'];
-    $order->status = 'OUT_FOR_DELIVERY';
-    $order->picked_at = now();
     $order->save();
 
     return response()->json([
-        'message' => 'تم قبول الطلب',
-        'order' => $order,
+        'message' => 'تم ربط الطلب بالمندوب',
+        'order'   => $order,
     ]);
 }
+
 
 
 public function getOrdersForDelivery(Request $request)
@@ -431,7 +442,7 @@ public function getOrdersForDelivery(Request $request)
     $deliveryId = $request->query('delivery_id');
 
     $orders = Order::where('delivery_id', $deliveryId)
-        ->where('status', 'OUT_FOR_DELIVERY')
+        ->where('status', 'READY_FOR_PICKUP')
         ->with([
             'address', // عنوان الزبون
             'store.addresses', // عناوين المتجر
@@ -447,6 +458,109 @@ public function getOrdersForDelivery(Request $request)
 
     return response()->json($orders);
 }
+
+public function getOrdersInDelivery(Request $request)
+{
+    $deliveryId = $request->query('delivery_id');
+
+    if (!$deliveryId) {
+        return response()->json([
+            'message' => 'delivery_id مطلوب'
+        ], 400);
+    }
+
+    $orders = Order::where('delivery_id', $deliveryId)
+        ->where('status', 'OUT_FOR_DELIVERY')
+        ->with([
+            'address',                    // عنوان الزبون
+            'store.addresses',            // عناوين المتجر
+            'store.sellerProfile',        // اسم المتجر
+            'customer.customerProfile',   // بروفايل الزبون
+        ])
+        ->get();
+
+    $orders->each(function ($order) {
+
+        // ✅ اسم الزبون
+        $customerProfile = optional(optional($order->customer)->customerProfile);
+        $order->customer_name = trim(
+            ($customerProfile->first_name ?? '') . ' ' .
+            ($customerProfile->last_name ?? '')
+        );
+
+        // ✅ عنوان المتجر الافتراضي
+        $order->store_address = optional(
+            optional($order->store)->addresses
+                ->where('is_default', 1)
+                ->first()
+        );
+    });
+
+    return response()->json($orders);
+}
+
+
+public function markOrderDelivered(Request $request, $orderId)
+{
+    $order = Order::where('id', $orderId)
+        ->where('status', 'OUT_FOR_DELIVERY')
+        ->first();
+
+    if (!$order) {
+        return response()->json([
+            'message' => 'الطلب غير متاح للتسليم'
+        ], 409);
+    }
+
+    $order->status = 'DELIVERED';
+    $order->delivered_at = now();
+    $order->save();
+
+    return response()->json([
+        'message' => 'تم تأكيد تسليم الطلب',
+        'order'   => $order
+    ]);
+}
+
+
+public function getFinishedOrdersForDelivery(Request $request)
+{
+    $deliveryId = $request->query('delivery_id');
+
+    if (!$deliveryId) {
+        return response()->json([
+            'message' => 'delivery_id مطلوب'
+        ], 400);
+    }
+
+    $orders = Order::where('delivery_id', $deliveryId)
+        ->whereIn('status', ['DELIVERED', 'CASH_COLLECTED'])
+        ->with([
+            'address',
+            'store.sellerProfile',
+            'customer.customerProfile',
+        ])
+        ->get();
+
+    $orders->each(function ($order) {
+
+        // اسم الزبون
+        $profile = optional(optional($order->customer)->customerProfile);
+        $order->customer_name = trim(
+            ($profile->first_name ?? '') . ' ' .
+            ($profile->last_name ?? '')
+        );
+
+        // اسم المتجر
+        $order->store_name = optional(
+            optional($order->store)->sellerProfile
+        )->name;
+    });
+
+    return response()->json($orders);
+}
+
+
 
 
 

@@ -217,3 +217,6 @@ Route::patch('users/{userId}/addresses/{addressId}/default',
     Route::post('/orders/{orderId}/accept', [OrderController::class, 'acceptOrderByDelivery']);
     Route::post('/orders/{orderId}/delivered', [OrderController::class, 'markOrderDelivered']);
 
+Route::get('/orders/in-delivery', [OrderController::class, 'getOrdersInDelivery']);
+Route::get('/orders/delivery/finished', [OrderController::class, 'getFinishedOrdersForDelivery']);
+

@@ -30,18 +30,21 @@ class DeliveryProfileController extends Controller
 
     // PATCH/PUT /deliveries/{user_id}
     public function update(Request $request, $user_id)
-    {
-        $delivery = DeliveryProfile::where('user_id', $user_id)->first();
-        if (!$delivery) {
+    { $delivery = DeliveryProfile::where('user_id', $user_id)->first();
+
+       if (!$delivery) {
             return response()->json(['message' => 'DeliveryProfile not found'], 404);
         }
 
-        $data = $request->validate([
-            'first_name'     => 'sometimes|nullable|string',
-            'last_name'      => 'sometimes|nullable|string',
-            'password'       => 'sometimes|string|min:6',
-            'profile_pic_url'=> 'sometimes|nullable|string',
-        ]);
+       $data = $request->validate([
+    'first_name'      => 'sometimes|nullable|string',
+    'last_name'       => 'sometimes|nullable|string',
+    'password'        => 'sometimes|string|min:6',
+    'profile_pic_url' => 'sometimes|nullable|string',
+    'vehicle_type'    => 'sometimes|nullable|string',
+    'vehicle_number'  => 'sometimes|nullable|string',
+]);
+
 
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
