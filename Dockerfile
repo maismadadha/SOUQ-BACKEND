@@ -1,10 +1,10 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --ignore-platform-req=php
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader --no-scripts --ignore-platform-req=php
 COPY . .
 RUN composer dump-autoload --no-dev --optimize
-
+ 
 FROM php:8.2-apache
 RUN apt-get update && apt-get install -y unzip git libzip-dev \
     && docker-php-ext-install pdo pdo_mysql zip \
