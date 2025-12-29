@@ -12,8 +12,7 @@ use App\Models\ProductImage;
 use App\Models\ProductOption;
 use App\Models\ProductOptionValue;
 
-class LamsetEdSeeder extends Seeder
-{
+class UsersSeeder extends Seeder{
     public function run(): void
     {
         /* =========================
